@@ -2,9 +2,9 @@
 # Задача "Модель пользователя"
 
 
-from fastapi import FastAPI,  HTTPException
+from fastapi import FastAPI,  Path, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import Annotated, List
 
 # uvicorn module_16_4:app --reload - команда запуска FastAPI через терминал
 app = FastAPI()
@@ -23,7 +23,9 @@ async def get_all_users() -> List[User]:
 
 # 2. id нового user будет на 1 больше, чем у последнего в списке users.
 @app.post('/user/{username}/{age}')
-async def add_user(user: User, username: str, age: int):
+async def add_user(
+    username: Annotated[str, Path(min_length=5, max_length=20, description="Enter username", example="UrbanUser")],
+    age: Annotated[int, Path(ge=18, le=120, description='Enter age', example='24')]) -> User:
     user_id = max((t.id for t in users), default=0) + 1
     new_user = User(id=user_id, username=username, age=age)
     users.append(new_user)
@@ -31,7 +33,11 @@ async def add_user(user: User, username: str, age: int):
 
 # 3.put запрос по маршруту '/user/{user_id}/{username}/{age} Обновляет username и age пользователя '
 @app.put('/user/{user_id}/{username}/{age}')
-async def update_user(user_id: int, username: str, age: int):
+async def update_user(
+    user_id: Annotated[int, Path(ge=1, le=100, description='Enter user ID', example=1)],
+    username: Annotated[str, Path(min_length=5, max_length=20,
+                                  description='Enter user name', example='UrbanUser')],
+    age: Annotated[int, Path(ge=18, le=120, description='Enter age', example=24)]):
     for user in users:
         if user.id == user_id:
             user.username = username
@@ -42,7 +48,7 @@ async def update_user(user_id: int, username: str, age: int):
 
 # 4. delete запрос по маршруту '/user/{user_id}' Удаляет пользователя
 @app.delete('/user/{user_id}')
-async def delete_user(user_id: int):
+async def delete_user(user_id: Annotated[int, Path(ge=1, le=100, description='Enter user ID', example=1)]):
     for i, user in enumerate(users):
         if user.id == user_id:
             deleted_user = users.pop(i)
